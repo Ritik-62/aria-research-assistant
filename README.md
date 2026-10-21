@@ -10,3 +10,23 @@ report generation.
 Activate the virtual environment and run:
 
     python app.py
+
+
+
+## Current Features
+
+- Structured research-plan generation
+- Research-question input validation
+- Suggested scholarly search queries
+- Inclusion and exclusion criteria
+- Expected research outputs
+- Automated unit tests
+
+## Run Tests
+
+    python -m unittest -v test_research_planner.py
+
+## Run ARIA
+
+    python app.py
+
