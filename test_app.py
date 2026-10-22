@@ -1,3 +1,4 @@
+
 import unittest
 from contextlib import redirect_stdout
 from io import StringIO
@@ -51,11 +52,15 @@ class TestAppIntegration(unittest.TestCase):
         mock_retrieve,
         mock_plan,
     ):
-        with patch("builtins.input", side_effect=[
-            "How is machine learning used in healthcare?",
-            "1",
-            "2",
-        ]):
+        with patch(
+            "builtins.input",
+            side_effect=[
+                "How is machine learning used in healthcare?",
+                "1",
+                "2",
+                "n",
+            ],
+        ):
             output = StringIO()
             with redirect_stdout(output):
                 app.main()
@@ -81,11 +86,15 @@ class TestAppIntegration(unittest.TestCase):
         mock_client = FakeLLMClient()
         mock_create_client.return_value = mock_client
 
-        with patch("builtins.input", side_effect=[
-            "How is machine learning used in healthcare?",
-            "1",
-            "1",
-        ]):
+        with patch(
+            "builtins.input",
+            side_effect=[
+                "How is machine learning used in healthcare?",
+                "1",
+                "1",
+                "n",
+            ],
+        ):
             output = StringIO()
             with redirect_stdout(output):
                 app.main()
