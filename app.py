@@ -1,7 +1,6 @@
 
 from research_planner import create_research_plan
-from paper_search import search_papers
-from semantic_scholar import search_semantic_scholar
+from retrieval_pipeline import retrieve_papers
 
 
 def main():
@@ -30,58 +29,56 @@ def main():
     for number, query in enumerate(plan["search_queries"], start=1):
         print(f"{number}. {query}")
 
-    print("\nInclusion criteria:")
-    for criterion in plan["inclusion_criteria"]:
-        print(f"- {criterion}")
-
-    print("\nExclusion criteria:")
-    for criterion in plan["exclusion_criteria"]:
-        print(f"- {criterion}")
-
-    print("\nExpected outputs:")
-    for output in plan["expected_outputs"]:
-        print(f"- {output}")
-
-    print("\nPAPER SEARCH")
+    print("\nPAPER RETRIEVAL")
     print("-" * 60)
     print("1. Sample data (offline)")
     print("2. Semantic Scholar (live API)")
 
     choice = input("Choose search source [1/2]: ").strip()
 
-    try:
-        if choice == "2":
-            print("\nSearching Semantic Scholar...")
-            papers = search_semantic_scholar(
-                research_question,
-                limit=5,
-            )
-        elif choice == "1":
-            print("\nSearching local sample records...")
-            print("WARNING: Sample records are fictional.")
-            papers = search_papers(research_question, limit=5)
-        else:
-            print("Invalid choice. Please select 1 or 2.")
-            return
+    if choice == "1":
+        print("\nSearching multiple queries using sample data...")
+        result = retrieve_papers(plan["search_queries"])
 
-    except (ValueError, RuntimeError) as error:
-        print(f"\nSearch error: {error}")
+    elif choice == "2":
+        print("\nSearching multiple queries using Semantic Scholar...")
+        from semantic_scholar import search_semantic_scholar
+
+        result = retrieve_papers(
+            plan["search_queries"],
+            search_fn=search_semantic_scholar,
+        )
+
+    else:
+        print("Invalid choice. Please select 1 or 2.")
         return
+
+    print(f"\nQueries attempted: {result['queries_attempted']}")
+    print(f"Failed queries: {len(result['failed_queries'])}")
+    print(f"Unique papers retrieved: {len(result['papers'])}")
+
+    if result["errors"]:
+        print("\nSearch warnings:")
+        for query, error in result["errors"].items():
+            print(f"- {query}: {error}")
+
+    papers = result["papers"]
 
     if not papers:
-        print("\nNo matching papers found.")
+        print("\nNo papers were retrieved successfully.")
         return
 
-    print(f"\nFound {len(papers)} paper(s):")
+    print("\nRETRIEVED PAPERS")
+    print("-" * 60)
 
-    for paper in papers:
-        print(f"\n[{paper['paper_id']}] {paper['title']}")
-        print(f"Authors: {', '.join(paper['authors'])}")
+    for number, paper in enumerate(papers, start=1):
+        print(f"\n{number}. [{paper['paper_id'] or 'No ID'}] {paper['title']}")
+        print(f"Authors: {', '.join(paper['authors']) or 'Unknown'}")
         print(f"Year: {paper['year'] or 'Unknown'}")
         print(f"Abstract: {paper['abstract'] or 'Not available'}")
         print(f"Source: {paper['source']}")
 
-        if paper.get("url"):
+        if paper["url"]:
             print(f"Link: {paper['url']}")
 
 
