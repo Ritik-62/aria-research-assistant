@@ -4,6 +4,10 @@
 from research_planner import create_research_plan
 from retrieval_pipeline import retrieve_papers
 from paper_analyzer import analyze_papers, create_offline_analysis
+from report_generator import (
+    build_research_report,
+    save_research_report,
+)
 
 
 def main():
@@ -11,6 +15,7 @@ def main():
     print("ARIA — Academic Research & Innovation Assistant")
     print("=" * 60)
 
+    # Step 1: Create the research plan.
     research_question = input("\nEnter your research question: ")
 
     try:
@@ -28,18 +33,19 @@ def main():
     for number, query in enumerate(plan["search_queries"], start=1):
         print(f"{number}. {query}")
 
+    # Step 2: Retrieve papers.
     print("\nPAPER RETRIEVAL")
     print("-" * 60)
     print("1. Sample data (offline)")
     print("2. Semantic Scholar (live API)")
 
-    choice = input("Choose search source [1/2]: ").strip()
+    search_choice = input("Choose search source [1/2]: ").strip()
 
-    if choice == "1":
+    if search_choice == "1":
         print("\nSearching sample data...")
         result = retrieve_papers(plan["search_queries"])
 
-    elif choice == "2":
+    elif search_choice == "2":
         print("\nSearching Semantic Scholar...")
         from semantic_scholar import search_semantic_scholar
 
@@ -83,7 +89,7 @@ def main():
         if paper["url"]:
             print(f"Link: {paper['url']}")
 
-    # Day 9 integration: analyze the retrieved papers.
+    # Step 3: Analyze the retrieved papers.
     print("\nPAPER ANALYSIS")
     print("-" * 60)
     print("1. OpenAI analysis (sends a live API request)")
@@ -97,9 +103,13 @@ def main():
                 plan["research_question"],
                 papers,
             )
-            print("\n" + analysis)
         except ValueError as error:
-            print(f"\nCould not create offline report: {error}")
+            print(f"\nCould not create offline analysis: {error}")
+            return
+
+        print("\nOFFLINE PAPER ANALYSIS")
+        print("-" * 60)
+        print(analysis)
 
     elif analysis_choice == "1":
         from llm_client import (
@@ -115,19 +125,57 @@ def main():
                 papers,
                 llm_client,
             )
-
-            print("\nAI PAPER ANALYSIS")
-            print("-" * 60)
-            print(analysis)
-
         except (LLMConfigurationError, LLMProviderError) as error:
             print(f"\nOpenAI analysis could not be completed: {error}")
+            return
         except ValueError as error:
             print(f"\nInvalid analysis input: {error}")
+            return
+
+        print("\nAI PAPER ANALYSIS")
+        print("-" * 60)
+        print(analysis)
 
     else:
         print("Invalid analysis choice. Please select 1 or 2.")
         return
+
+    # Step 4: Generate the Markdown research report.
+    try:
+        report = build_research_report(
+            research_question=plan["research_question"],
+            papers=papers,
+            analysis=analysis,
+        )
+    except ValueError as error:
+        print(f"\nCould not generate research report: {error}")
+        return
+
+    print("\n" + "=" * 60)
+    print("ARIA RESEARCH REPORT")
+    print("=" * 60)
+    print(report)
+
+    # Step 5: Optionally save the report.
+    save_choice = input(
+        "\nSave this report as a Markdown file? (y/n): "
+    ).strip().lower()
+
+    if save_choice == "y":
+        try:
+            saved_path = save_research_report(
+                report,
+                "reports/research_report.md",
+            )
+            print(f"Report saved to: {saved_path}")
+        except OSError as error:
+            print(f"\nCould not save report: {error}")
+
+    elif save_choice == "n":
+        print("Report was not saved.")
+
+    else:
+        print("Unrecognized choice. Report was not saved.")
 
 
 if __name__ == "__main__":
