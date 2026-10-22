@@ -1,6 +1,9 @@
 
+"""Command-line entry point for ARIA."""
+
 from research_planner import create_research_plan
 from retrieval_pipeline import retrieve_papers
+from paper_analyzer import analyze_papers, create_offline_analysis
 
 
 def main():
@@ -18,12 +21,8 @@ def main():
 
     print("\nRESEARCH PLAN")
     print("-" * 60)
-
-    print("\nResearch question:")
-    print(plan["research_question"])
-
-    print("\nObjective:")
-    print(plan["objective"])
+    print(f"\nResearch question:\n{plan['research_question']}")
+    print(f"\nObjective:\n{plan['objective']}")
 
     print("\nSuggested search queries:")
     for number, query in enumerate(plan["search_queries"], start=1):
@@ -37,11 +36,11 @@ def main():
     choice = input("Choose search source [1/2]: ").strip()
 
     if choice == "1":
-        print("\nSearching multiple queries using sample data...")
+        print("\nSearching sample data...")
         result = retrieve_papers(plan["search_queries"])
 
     elif choice == "2":
-        print("\nSearching multiple queries using Semantic Scholar...")
+        print("\nSearching Semantic Scholar...")
         from semantic_scholar import search_semantic_scholar
 
         result = retrieve_papers(
@@ -50,7 +49,7 @@ def main():
         )
 
     else:
-        print("Invalid choice. Please select 1 or 2.")
+        print("Invalid search choice. Please select 1 or 2.")
         return
 
     print(f"\nQueries attempted: {result['queries_attempted']}")
@@ -72,7 +71,10 @@ def main():
     print("-" * 60)
 
     for number, paper in enumerate(papers, start=1):
-        print(f"\n{number}. [{paper['paper_id'] or 'No ID'}] {paper['title']}")
+        print(
+            f"\n{number}. "
+            f"[{paper['paper_id'] or 'No ID'}] {paper['title']}"
+        )
         print(f"Authors: {', '.join(paper['authors']) or 'Unknown'}")
         print(f"Year: {paper['year'] or 'Unknown'}")
         print(f"Abstract: {paper['abstract'] or 'Not available'}")
@@ -80,6 +82,52 @@ def main():
 
         if paper["url"]:
             print(f"Link: {paper['url']}")
+
+    # Day 9 integration: analyze the retrieved papers.
+    print("\nPAPER ANALYSIS")
+    print("-" * 60)
+    print("1. OpenAI analysis (sends a live API request)")
+    print("2. Offline evidence report (no OpenAI API call)")
+
+    analysis_choice = input("Choose analysis mode [1/2]: ").strip()
+
+    if analysis_choice == "2":
+        try:
+            analysis = create_offline_analysis(
+                plan["research_question"],
+                papers,
+            )
+            print("\n" + analysis)
+        except ValueError as error:
+            print(f"\nCould not create offline report: {error}")
+
+    elif analysis_choice == "1":
+        from llm_client import (
+            create_openai_llm_client,
+            LLMConfigurationError,
+            LLMProviderError,
+        )
+
+        try:
+            llm_client = create_openai_llm_client()
+            analysis = analyze_papers(
+                plan["research_question"],
+                papers,
+                llm_client,
+            )
+
+            print("\nAI PAPER ANALYSIS")
+            print("-" * 60)
+            print(analysis)
+
+        except (LLMConfigurationError, LLMProviderError) as error:
+            print(f"\nOpenAI analysis could not be completed: {error}")
+        except ValueError as error:
+            print(f"\nInvalid analysis input: {error}")
+
+    else:
+        print("Invalid analysis choice. Please select 1 or 2.")
+        return
 
 
 if __name__ == "__main__":

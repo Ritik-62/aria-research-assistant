@@ -1,6 +1,6 @@
 
 """Evidence-conscious academic paper analysis for ARIA."""
-
+from collections.abc import Sequence
 from collections.abc import Mapping, Sequence
 from typing import Any
 
@@ -158,3 +158,39 @@ def analyze_papers(
         )
 
     return llm_client.generate(prompt)
+
+
+def create_offline_analysis(
+    research_question: str,
+    papers: Sequence[Any],
+) -> str:
+    """Create a basic evidence inventory without an external LLM."""
+    if not isinstance(research_question, str) or not research_question.strip():
+        raise PaperAnalysisError("Research question must not be empty.")
+
+    if not papers:
+        raise PaperAnalysisError("At least one paper is required.")
+
+    lines = [
+        "ARIA OFFLINE PAPER REVIEW",
+        "=" * 28,
+        f"Research question: {research_question.strip()}",
+        "",
+        f"Papers reviewed: {len(papers)}",
+        "",
+        "Retrieved evidence:",
+    ]
+
+    for index, paper in enumerate(papers, start=1):
+        formatted_paper = _format_paper(paper, index)
+        lines.extend(["", formatted_paper])
+
+    lines.extend([
+        "",
+        "Important limitation:",
+        "This offline report lists retrieved paper metadata. It does not "
+        "synthesize or verify scientific findings. Review the original "
+        "papers before drawing research conclusions.",
+    ])
+
+    return "\n".join(lines)
