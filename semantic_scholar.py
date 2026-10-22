@@ -23,15 +23,18 @@ def search_semantic_scholar(
     query: str,
     limit: int = 5,
 ) -> list[SemanticPaper]:
-    """Search Semantic Scholar and normalize returned paper metadata."""
+    """Search Semantic Scholar and normalize paper metadata."""
 
-    query = query.strip()
-
-    if not query:
+    if not isinstance(query, str) or not query.strip():
         raise ValueError("Search query cannot be empty.")
+
+    if not isinstance(limit, int) or isinstance(limit, bool):
+        raise ValueError("Limit must be an integer between 1 and 100.")
 
     if not 1 <= limit <= 100:
         raise ValueError("Limit must be between 1 and 100.")
+
+    query = query.strip()
 
     params = urlencode({
         "query": query,
@@ -58,6 +61,11 @@ def search_semantic_scholar(
                 "Wait before trying again."
             ) from error
 
+        if error.code == 401 or error.code == 403:
+            raise RuntimeError(
+                f"Semantic Scholar access denied (HTTP {error.code})."
+            ) from error
+
         raise RuntimeError(
             f"Semantic Scholar returned HTTP {error.code}."
         ) from error
@@ -67,37 +75,66 @@ def search_semantic_scholar(
             f"Could not connect to Semantic Scholar: {error.reason}"
         ) from error
 
-    except (TimeoutError, json.JSONDecodeError) as error:
+    except (TimeoutError, json.JSONDecodeError, UnicodeDecodeError) as error:
         raise RuntimeError(
-            "The request timed out or the API returned invalid JSON."
+            "The request timed out or the API returned invalid data."
         ) from error
+
+    if not isinstance(payload, dict):
+        raise RuntimeError("Semantic Scholar returned an unexpected response.")
+
+    data = payload.get("data", [])
+
+    if not isinstance(data, list):
+        raise RuntimeError("Semantic Scholar returned an invalid papers list.")
 
     papers: list[SemanticPaper] = []
 
-    for item in payload.get("data", []):
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+
         paper_id = item.get("paperId")
         title = item.get("title")
 
-        # Ignore records without the minimum useful identifiers.
-        if not paper_id or not title:
+        if not isinstance(paper_id, str) or not paper_id.strip():
             continue
 
-        authors = [
-            author["name"]
-            for author in (item.get("authors") or [])
-            if author.get("name")
-        ]
+        if not isinstance(title, str) or not title.strip():
+            continue
+
+        raw_authors = item.get("authors") or []
+        authors = []
+
+        if isinstance(raw_authors, list):
+            authors = [
+                author["name"]
+                for author in raw_authors
+                if isinstance(author, dict)
+                and isinstance(author.get("name"), str)
+                and author["name"].strip()
+            ]
+
+        year = item.get("year")
+        if not isinstance(year, int) or isinstance(year, bool):
+            year = 0
+
+        abstract = item.get("abstract")
+        if not isinstance(abstract, str):
+            abstract = ""
+
+        url = item.get("url")
+        if not isinstance(url, str) or not url.strip():
+            url = f"https://www.semanticscholar.org/paper/{paper_id}"
 
         papers.append({
             "paper_id": paper_id,
-            "title": title,
+            "title": title.strip(),
             "authors": authors,
-            "year": item.get("year") or 0,
-            "abstract": item.get("abstract") or "",
+            "year": year,
+            "abstract": abstract,
             "source": "Semantic Scholar",
-            "url": item.get("url") or (
-                f"https://www.semanticscholar.org/paper/{paper_id}"
-            ),
+            "url": url,
         })
 
     return papers
