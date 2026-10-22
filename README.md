@@ -126,3 +126,24 @@ Configure `.env` locally using `.env.example` as a template. Never commit API ke
 ### Run All Tests
 
     python -m unittest discover -v
+
+## Research reports
+
+ARIA can format retrieved paper records and analysis into a Markdown
+research report.
+
+Reports include:
+- The research question and supplied analysis
+- Retrieved papers with stable reference labels such as [P1] and [P2]
+- Available paper IDs, titles, authors, publication years, and links
+- Limitations and guidance for verifying claims against original sources
+
+Reports can be saved locally under the `reports/` directory.
+
+Important notes:
+- Offline reports are evidence inventories, not verified scientific syntheses.
+- Metadata and abstracts may not establish a paper's complete findings.
+- Potential research gaps should be treated as preliminary.
+- Retrieval does not guarantee exhaustive literature coverage.
+- Report references identify retrieved records; they do not independently
+  verify every claim.
