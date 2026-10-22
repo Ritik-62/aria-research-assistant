@@ -104,3 +104,25 @@ The `.env.example` file is a safe configuration template containing placeholder 
 ### Run All Tests
 
     python -m unittest discover -v
+
+
+
+## OpenAI Provider Integration
+
+ARIA includes an OpenAI provider built on the OpenAI Responses API.
+
+- Uses the existing injectable `LLMClient` interface.
+- Loads the API key from environment configuration.
+- Supports a configurable model through `OPENAI_MODEL`.
+- Handles provider failures with safe error messages.
+- Supports mocked provider tests without live API calls.
+
+Configure `.env` locally using `.env.example` as a template. Never commit API keys or secrets.
+
+### Run LLM Tests
+
+    python -m unittest test_llm_client -v
+
+### Run All Tests
+
+    python -m unittest discover -v
