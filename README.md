@@ -30,3 +30,27 @@ Activate the virtual environment and run:
 
     python app.py
 
+
+
+## Paper normalization and deduplication
+
+ARIA converts paper records into a consistent structure
+containing:
+
+- Paper ID
+- Title
+- Authors
+- Publication year
+- Abstract
+- Source
+- URL
+
+Duplicate records are detected using paper identifiers
+and normalized titles. When possible, missing metadata
+is filled from duplicate records.
+
+## Run tests
+
+```bash
+python -m unittest -v
+```
